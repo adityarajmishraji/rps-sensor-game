@@ -7,6 +7,24 @@ const path = require('path');
 const { config, findAvailablePort } = require('./config');
 const portManager = require('./port-manager');
 const userManager = require('./user-manager');
+const winston = require('winston');
+const rateLimit = require('express-rate-limit');
+
+// Configure logger
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+    ),
+    transports: [
+        new winston.transports.File({ filename: 'error.log', level: 'error' }),
+        new winston.transports.File({ filename: 'combined.log' }),
+        new winston.transports.Console({
+            format: winston.format.simple()
+        })
+    ]
+});
 
 const app = express();
 
@@ -16,6 +34,9 @@ app.use(express.json());
 
 // Serve static files from the client/src directory
 app.use(express.static(path.join(__dirname, '../client/src')));
+app.use('/scripts', express.static(path.join(__dirname, '../client/src/scripts')));
+app.use('/styles', express.static(path.join(__dirname, '../client/src/styles')));
+app.use('/services', express.static(path.join(__dirname, '../client/src/services')));
 
 // Serve the main page
 app.get('/', (req, res) => {
@@ -24,13 +45,29 @@ app.get('/', (req, res) => {
 
 const server = http.createServer(app);
 const io = socketIO(server, {
-    cors: config.cors,
-    pingTimeout: config.socket.pingTimeout,
-    pingInterval: config.socket.pingInterval
+    cors: {
+        origin: process.env.NODE_ENV === 'production' 
+            ? ['https://your-domain.com'] 
+            : ['http://localhost:3000'],
+        methods: ['GET', 'POST']
+    }
 });
 
 // Middleware
 app.use(express.static('public'));
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    logger.error('Unhandled error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+});
 
 // Authentication routes
 app.post('/auth/signup', async (req, res) => {
@@ -191,7 +228,7 @@ const rooms = new Map();
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    logger.info(`User connected: ${socket.id}`);
     
     socket.on('game_result', async (data) => {
         if (data.username) {
@@ -201,7 +238,12 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
+        try {
+            cleanupPlayerRooms(socket.id);
+            logger.info(`User disconnected: ${socket.id}`);
+        } catch (error) {
+            logger.error('Error handling disconnection:', error);
+        }
     });
 
     // Create room
@@ -332,7 +374,7 @@ const startServer = () => {
     const port = config.port;
     
     server.listen(port, () => {
-        console.log(`Server running on port ${port}`);
+        logger.info(`Server running on port ${port}`);
     });
 
     server.on('error', (error) => {

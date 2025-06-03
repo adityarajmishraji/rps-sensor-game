@@ -1,171 +1,180 @@
-# Rock Paper Scissors - Hand Gesture Game
+# Rock Paper Scissors with Gesture Recognition
 
-A modern, interactive Rock Paper Scissors game with real-time hand gesture recognition and multiplayer functionality.
+A modern, interactive Rock Paper Scissors game featuring real-time gesture recognition, multiplayer support, and an engaging user interface.
 
-## 🚀 Features
+## Features
 
-- **Multiple Game Modes**
-  - Single Player vs Computer
-  - Local Multiplayer (2 players)
-  - Online Multiplayer (2-6 players)
-  - Hand Gesture Recognition Mode
+### Core Gameplay
+- Single-player mode against computer AI
+- Real-time gesture recognition using webcam
+- Multiplayer mode with room-based matchmaking
+- Spectator mode for watching live games
+- Session-based game history and statistics
 
-- **Security Features**
-  - JWT-based authentication
-  - Rate limiting and DDoS protection
-  - Secure WebSocket connections
-  - Input validation and sanitization
-  - CSRF protection
-  - Secure session management
+### Gesture Recognition
+- Advanced hand landmark detection using MediaPipe
+- High-accuracy gesture classification with confidence scoring
+- Real-time hand tracking and position analysis
+- Support for different hand orientations and positions
 
-- **Real-time Features**
-  - Live hand gesture recognition
-  - Real-time multiplayer gameplay
-  - Instant game state updates
-  - Live leaderboard updates
+### Multiplayer Features
+- Real-time multiplayer matches
+- Room creation and joining functionality
+- In-game chat system
+- Live spectator mode
+- Player statistics tracking
+- Room management with spectator support
 
-## 🛠️ Tech Stack
+### User Interface
+- Modern, responsive design
+- Smooth animations and transitions
+- Dark mode support
+- Real-time game state updates
+- Toast notifications for game events
+- Mobile-friendly layout
 
-- **Frontend**
-  - HTML5/CSS3/JavaScript
-  - Socket.IO Client
-  - TensorFlow.js for gesture recognition
-  - MediaPipe for hand tracking
+## Technical Stack
 
-- **Backend**
-  - Node.js/Express
-  - Python (Gesture Service)
-  - Socket.IO
-  - JWT for authentication
+### Frontend
+- HTML5/CSS3 for structure and styling
+- JavaScript (ES6+) for game logic
+- Socket.IO client for real-time communication
+- MediaPipe for hand tracking
+- Modern CSS animations and transitions
 
-- **AI/ML**
-  - TensorFlow/MediaPipe
-  - Custom gesture recognition model
-  - Real-time hand tracking
+### Backend
+- Node.js with Express for the game server
+- Flask for the gesture recognition service
+- Socket.IO for real-time bidirectional communication
+- MediaPipe Hands for gesture processing
+- Winston for logging
 
-## 📦 Installation
+## Setup Instructions
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/rps-sensor-game.git
-   cd rps-sensor-game
-   ```
+### Prerequisites
+- Node.js (v14 or higher)
+- Python 3.8+ with pip
+- Webcam for gesture recognition
+- Modern web browser (Chrome/Firefox recommended)
 
-2. **Install dependencies**
-   ```bash
-   # Install Node.js dependencies
-   npm install
+### Installation
 
-   # Install Python dependencies
-   cd gesture_service
-   pip install -r requirements.txt
-   cd ..
-   ```
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/rps-sensor-game.git
+cd rps-sensor-game
+```
 
-3. **Environment Setup**
-   ```bash
-   # Copy example environment file
-   cp .env.example .env
-   # Edit .env with your configurations
-   ```
+2. Install Node.js dependencies:
+```bash
+npm install
+```
 
-4. **Development Certificates** (for HTTPS)
-   ```bash
-   # Generate development certificates
-   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-     -keyout dev-private.key -out dev-certificate.crt
-   ```
+3. Install Python dependencies:
+```bash
+cd gesture_service
+pip install -r requirements.txt
+cd ..
+```
 
-## 🚀 Running the Application
+4. Start the servers:
 
-1. **Start the Node.js server**
-   ```bash
-   npm run dev
-   ```
+For Windows PowerShell:
+```powershell
+powershell -ExecutionPolicy Bypass -File start.ps1
+```
 
-2. **Start the Gesture Service**
-   ```bash
-   cd gesture_service
-   python app.py
-   ```
+For Unix/Linux:
+```bash
+./start.sh
+```
 
-3. Open `https://localhost:3000` in your browser
+Or manually start each service:
+```bash
+# Terminal 1 - Start Node.js server
+npm run dev
 
-## 🔒 Security Configuration
+# Terminal 2 - Start gesture service
+cd gesture_service
+python app.py
+```
 
-1. **SSL/TLS Setup**
-   - Generate production certificates
-   - Configure HTTPS
-   - Set up HSTS
+5. Access the game:
+Open your browser and navigate to `http://localhost:3000`
 
-2. **Environment Variables**
-   - Set secure secrets
-   - Configure rate limits
-   - Set up CORS policies
+## Configuration
 
-## 📝 API Documentation
+### Environment Variables
+- `PORT`: Node.js server port (default: 3000)
+- `GESTURE_SERVICE_PORT`: Flask server port (default: 5000)
+- `NODE_ENV`: Environment mode (development/production)
 
-- **Authentication Endpoints**
-  - POST `/auth/signup`
-  - POST `/auth/login`
-  - POST `/auth/logout`
+### Gesture Recognition Settings
+- `MIN_DETECTION_CONFIDENCE`: Minimum confidence for hand detection (default: 0.7)
+- `MIN_TRACKING_CONFIDENCE`: Minimum confidence for hand tracking (default: 0.7)
 
-- **Game Endpoints**
-  - GET `/api/rooms`
-  - POST `/api/rooms/create`
-  - POST `/api/game/move`
+## Development
 
-## 🌐 Deployment
+### Project Structure
+```
+rps-sensor-game/
+├── client/
+│   ├── src/
+│   │   ├── scripts/
+│   │   │   ├── game.js
+│   │   │   └── multiplayer.js
+│   │   └── styles/
+│   │       └── main.css
+├── gesture_service/
+│   ├── app.py
+│   └── enhanced_gesture_detector.py
+├── server/
+│   └── server.js
+└── start.ps1/start.sh
+```
 
-### Vercel Deployment
-1. Install Vercel CLI:
-   ```bash
-   npm i -g vercel
-   ```
+### Key Components
+- `game.js`: Core game logic and UI management
+- `multiplayer.js`: Multiplayer functionality and Socket.IO integration
+- `app.py`: Gesture recognition service
+- `server.js`: Game server and room management
 
-2. Deploy:
-   ```bash
-   vercel
-   ```
-
-### Netlify Deployment
-1. Add `netlify.toml`:
-   ```toml
-   [build]
-     command = "npm run build"
-     publish = "build"
-   ```
-
-2. Deploy via Netlify CLI or GitHub integration
-
-### Render Deployment
-1. Connect GitHub repository
-2. Configure build settings:
-   - Build Command: `npm run build`
-   - Start Command: `npm start`
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🔐 Security
+## Acknowledgments
+- MediaPipe for hand tracking technology
+- Socket.IO for real-time communication
+- The open-source community for various tools and libraries
 
-Report security vulnerabilities to [security@yourdomain.com]
+## Troubleshooting
 
-## 👥 Authors
+### Common Issues
 
-- Your Name - Initial work - [YourGitHub](https://github.com/yourusername)
+1. Gesture Recognition Not Working
+- Ensure webcam permissions are granted
+- Check if gesture service is running on port 5000
+- Verify Python dependencies are installed correctly
 
-## 🙏 Acknowledgments
+2. Multiplayer Connection Issues
+- Confirm both server and client are running
+- Check network firewall settings
+- Verify Socket.IO connection in browser console
 
-- MediaPipe team for hand tracking
-- TensorFlow.js community
-- Socket.IO team
+3. Performance Issues
+- Ensure proper lighting for gesture recognition
+- Close other resource-intensive applications
+- Check browser console for errors
+
+### Support
+
+For issues and feature requests, please use the GitHub issue tracker or contact the development team.

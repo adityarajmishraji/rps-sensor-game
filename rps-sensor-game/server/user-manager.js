@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const fs = require('fs').promises;
 const path = require('path');
+const firebaseService = require('./services/firebase-service');
 
 const USERS_FILE = path.join(__dirname, 'data', 'users.json');
 const SCORES_FILE = path.join(__dirname, 'data', 'scores.json');
@@ -38,7 +39,7 @@ class UserManager {
         this.guestData = new Map();
         this.onlineUsers = new Map();
         // Clean up old guest data periodically
-        setInterval(() => this.cleanupGuestData(), 24 * 60 * 60 * 1000); // Run daily
+        this.cleanupInterval = setInterval(() => this.cleanupGuestData(), 24 * 60 * 60 * 1000); // Daily cleanup
     }
 
     async initializeDataFiles() {
@@ -127,10 +128,11 @@ class UserManager {
         return `${prefix}_${suffix}`;
     }
 
-    updateGuestStats(guestId, gameResult) {
+    async updateGuestStats(guestId, gameResult) {
         const guest = this.guestData.get(guestId);
         if (!guest) return null;
 
+        // Update local cache
         guest.stats.totalGames++;
         if (gameResult === 'win') guest.stats.wins++;
         else if (gameResult === 'loss') guest.stats.losses++;
@@ -138,6 +140,12 @@ class UserManager {
 
         guest.stats.winRate = (guest.stats.wins / guest.stats.totalGames * 100).toFixed(1);
         guest.lastActive = new Date();
+
+        // Save to Firebase
+        await firebaseService.saveGuestData(guestId, {
+            stats: guest.stats,
+            lastActive: guest.lastActive
+        });
 
         return guest;
     }
@@ -149,29 +157,24 @@ class UserManager {
             .slice(0, limit);
     }
 
-    cleanupInactiveGuests(maxInactiveTime = 24 * 60 * 60 * 1000) { // 24 hours
-        const now = new Date();
-        for (const [guestId, data] of this.guestData.entries()) {
-            if (now - data.lastActive > maxInactiveTime) {
-                this.guestData.delete(guestId);
-            }
-        }
-    }
-
     async cleanupGuestData() {
-        const scores = await this.loadScores(true);
-        const now = new Date();
-        const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+        try {
+            // Cleanup Firebase guest data
+            const deletedCount = await firebaseService.cleanupGuestData(30);
+            console.log(`Cleaned up ${deletedCount} old guest records`);
 
-        // Remove guest data older than 30 days
-        for (const [guestId, data] of Object.entries(scores)) {
-            const lastPlayed = new Date(data.lastPlayed);
-            if (lastPlayed < thirtyDaysAgo) {
-                delete scores[guestId];
+            // Cleanup local cache
+            const now = new Date();
+            const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+            for (const [guestId, data] of this.guestData.entries()) {
+                if (data.lastActive < thirtyDaysAgo) {
+                    this.guestData.delete(guestId);
+                }
             }
+        } catch (error) {
+            console.error('Error during guest data cleanup:', error);
         }
-
-        await this.saveScores(scores, true);
     }
 
     async handleSocialLogin(profile) {
@@ -205,63 +208,34 @@ class UserManager {
         return {
             username: users[socialId].username,
             location: users[socialId].location,
-            stats: await this.getStats(socialId)
+            stats: await this.getPlayerStats(socialId)
         };
     }
 
     async updateScore(userId, result, isGuest = false) {
-        const scores = await this.loadScores(isGuest);
-        if (!scores[userId]) {
-            scores[userId] = {
-                wins: 0,
-                losses: 0,
-                draws: 0,
-                totalGames: 0,
-                lastPlayed: null
-            };
+        if (isGuest) {
+            return this.updateGuestStats(userId, result);
         }
 
-        scores[userId].totalGames++;
-        scores[userId][result]++;
-        scores[userId].lastPlayed = new Date().toISOString();
+        // Update Firebase stats for registered users
+        return await firebaseService.updatePlayerStats(userId, result);
+    }
 
-        await this.saveScores(scores, isGuest);
-        return scores[userId];
+    async getPlayerStats(userId, isGuest = false) {
+        if (isGuest) {
+            const guest = this.guestData.get(userId);
+            return guest ? guest.stats : null;
+        }
+
+        return await firebaseService.getUser(userId);
+    }
+
+    async saveGameResult(gameData) {
+        return await firebaseService.saveGame(gameData);
     }
 
     async getLeaderboard() {
-        const [regularScores, guestScores] = await Promise.all([
-            this.loadScores(false),
-            this.loadScores(true)
-        ]);
-        const users = await this.loadUsers();
-
-        // Combine and format all scores
-        const allScores = [
-            ...Object.entries(regularScores).map(([id, stats]) => ({
-                username: users[id]?.username || id,
-                location: users[id]?.location || 'Unknown',
-                isGuest: false,
-                ...stats
-            })),
-            ...Object.entries(guestScores).map(([id, stats]) => ({
-                username: stats.nickname || id,
-                location: 'Guest',
-                isGuest: true,
-                ...stats
-            }))
-        ];
-
-        // Sort by win rate and return top 10
-        return allScores
-            .map(stats => ({
-                ...stats,
-                winRate: stats.totalGames > 0 
-                    ? ((stats.wins / stats.totalGames) * 100).toFixed(1) 
-                    : '0.0'
-            }))
-            .sort((a, b) => b.winRate - a.winRate)
-            .slice(0, 10);
+        return await firebaseService.getLeaderboard();
     }
 
     async signup(username, password, location) {

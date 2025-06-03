@@ -1,190 +1,132 @@
 class RPSGame {
     constructor() {
-        this.currentMode = CONFIG.modes.computer;
+        this.sessionManager = new SessionManager();
+        this.currentMode = 'computer';
+        this.isPlaying = false;
+        this.roundTimer = null;
         this.scores = { player1: 0, player2: 0 };
-        this.currentRound = 0;
-        this.isGameActive = false;
-        this.choices = { player1: null, player2: null };
-        
-        // Socket event listeners
-        GAME_SOCKET.on('gameStart', this.handleGameStart.bind(this));
-        GAME_SOCKET.on('opponentChoice', this.handleOpponentChoice.bind(this));
-        GAME_SOCKET.on('roundResult', this.handleRoundResult.bind(this));
-        
-        // DOM elements
-        this.setupDOMElements();
+        this.gestures = ['rock', 'paper', 'scissors'];
         this.setupEventListeners();
-    }
-
-    setupDOMElements() {
-        this.player1Display = document.querySelector('.player-1 .choice-display');
-        this.player2Display = document.querySelector('.player-2 .choice-display');
-        this.player1Score = document.querySelector('.player-1 .score');
-        this.player2Score = document.querySelector('.player-2 .score');
-        this.resultDisplay = document.querySelector('.result');
-        this.timerDisplay = document.querySelector('.timer');
-        this.modeButtons = document.querySelectorAll('.mode-btn');
-        this.choiceButtons = document.querySelectorAll('.choice-btn');
-        this.cameraContainer = document.querySelector('.camera-container');
+        this.setupAnimations();
     }
 
     setupEventListeners() {
-        this.modeButtons.forEach(btn => {
-            btn.addEventListener('click', () => this.setGameMode(btn.dataset.mode));
+        // Mode selection
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.changeMode(btn.dataset.mode));
         });
 
-        this.choiceButtons.forEach(btn => {
+        // Choice buttons
+        document.querySelectorAll('.choice-btn').forEach(btn => {
             btn.addEventListener('click', () => this.makeChoice(btn.dataset.choice));
         });
     }
 
-    setGameMode(mode) {
+    setupAnimations() {
+        this.animations = {
+            shake: [
+                { transform: 'translateY(0px)' },
+                { transform: 'translateY(-20px)' },
+                { transform: 'translateY(0px)' }
+            ],
+            result: [
+                { transform: 'scale(1)', opacity: 0 },
+                { transform: 'scale(1.2)', opacity: 1 },
+                { transform: 'scale(1)', opacity: 1 }
+            ]
+        };
+    }
+
+    changeMode(mode) {
         this.currentMode = mode;
-        this.resetGame();
-        
-        // Update UI
-        this.modeButtons.forEach(btn => {
+        document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.mode === mode);
         });
 
-        // Handle camera visibility
-        this.cameraContainer.classList.toggle('hidden', mode !== CONFIG.modes.gesture);
-        
-        if (mode === CONFIG.modes.gesture) {
-            window.gestureDetector.start();
-        } else {
-            window.gestureDetector.stop();
-        }
+        // Show/hide camera for gesture mode
+        const cameraContainer = document.querySelector('.camera-container');
+        cameraContainer.classList.toggle('hidden', mode !== 'gesture');
+
+        // Reset scores
+        this.resetGame();
     }
 
-    makeChoice(choice) {
-        if (!this.isGameActive) return;
-        
-        this.choices.player1 = choice;
-        this.player1Display.textContent = this.getChoiceEmoji(choice);
-        
-        if (this.currentMode === CONFIG.modes.computer) {
-            this.makeComputerChoice();
-        } else {
-            GAME_SOCKET.emit('playerChoice', { choice });
-        }
-    }
+    async makeChoice(playerChoice) {
+        if (this.isPlaying) return;
+        this.isPlaying = true;
 
-    makeComputerChoice() {
-        const choices = ['rock', 'paper', 'scissors'];
-        const computerChoice = choices[Math.floor(Math.random() * choices.length)];
-        this.choices.player2 = computerChoice;
-        this.player2Display.textContent = this.getChoiceEmoji(computerChoice);
+        // Animate countdown
+        await this.playCountdown();
+
+        // Get opponent's choice based on mode
+        const opponentChoice = await this.getOpponentChoice();
+
+        // Display choices
+        this.displayChoices(playerChoice, opponentChoice);
+
+        // Determine winner
+        const result = this.determineWinner(playerChoice, opponentChoice);
         
+        // Update scores and display
+        this.updateScores(result);
+
+        // Save to session storage
+        this.sessionManager.addGameScore({
+            playerScore: this.scores.player1,
+            computerScore: this.scores.player2,
+            gameMode: this.currentMode
+        });
+
+        // Reset for next round
         setTimeout(() => {
-            this.determineWinner();
-        }, 1000);
-    }
-
-    handleOpponentChoice(data) {
-        this.choices.player2 = data.choice;
-        this.player2Display.textContent = this.getChoiceEmoji(data.choice);
-        this.determineWinner();
-    }
-
-    determineWinner() {
-        const { player1, player2 } = this.choices;
-        let result = '';
-
-        if (player1 === player2) {
-            result = 'Draw!';
-        } else if (
-            (player1 === 'rock' && player2 === 'scissors') ||
-            (player1 === 'paper' && player2 === 'rock') ||
-            (player1 === 'scissors' && player2 === 'paper')
-        ) {
-            result = 'Player 1 wins!';
-            this.scores.player1++;
-        } else {
-            result = 'Player 2 wins!';
-            this.scores.player2++;
-        }
-
-        this.updateScores();
-        this.showResult(result);
-        
-        if (this.scores.player1 >= CONFIG.maxScore || this.scores.player2 >= CONFIG.maxScore) {
-            this.endGame();
-        } else {
-            this.prepareNextRound();
-        }
-    }
-
-    updateScores() {
-        this.player1Score.textContent = this.scores.player1;
-        this.player2Score.textContent = this.scores.player2;
-    }
-
-    showResult(result) {
-        this.resultDisplay.textContent = result;
-        
-        // Play sound effect
-        const sound = new Audio(
-            result.includes('Draw') ? CONFIG.sounds.draw :
-            result.includes('Player 1') ? CONFIG.sounds.win :
-            CONFIG.sounds.lose
-        );
-        sound.play().catch(console.error);
-    }
-
-    prepareNextRound() {
-        setTimeout(() => {
-            this.player1Display.textContent = '';
-            this.player2Display.textContent = '';
-            this.resultDisplay.textContent = '';
-            this.choices = { player1: null, player2: null };
-            this.startRound();
+            this.isPlaying = false;
         }, 2000);
     }
 
-    startRound() {
-        this.isGameActive = true;
-        let countdown = 3;
+    async playCountdown() {
+        const timer = document.querySelector('.timer');
+        timer.style.display = 'block';
         
-        const timer = setInterval(() => {
-            if (countdown > 0) {
-                this.timerDisplay.textContent = countdown;
-                countdown--;
-            } else {
-                clearInterval(timer);
-                this.timerDisplay.textContent = 'Go!';
-                setTimeout(() => {
-                    this.timerDisplay.textContent = '';
-                }, 500);
-            }
-        }, 1000);
+        for (let i = 3; i > 0; i--) {
+            timer.textContent = i;
+            await new Promise(resolve => setTimeout(resolve, 500));
+            timer.animate(this.animations.shake, {
+                duration: 500,
+                iterations: 1
+            });
+        }
+        
+        timer.style.display = 'none';
     }
 
-    resetGame() {
-        this.scores = { player1: 0, player2: 0 };
-        this.currentRound = 0;
-        this.isGameActive = false;
-        this.choices = { player1: null, player2: null };
-        
-        this.updateScores();
-        this.player1Display.textContent = '';
-        this.player2Display.textContent = '';
-        this.resultDisplay.textContent = '';
-        this.timerDisplay.textContent = '';
-        
-        this.startRound();
+    async getOpponentChoice() {
+        switch (this.currentMode) {
+            case 'computer':
+                return this.gestures[Math.floor(Math.random() * 3)];
+            case 'gesture':
+                // Get choice from gesture recognition
+                const response = await fetch('/detect', {
+                    method: 'POST',
+                    body: await this.captureImage()
+                });
+                const data = await response.json();
+                return data.gesture;
+            default:
+                return null;
+        }
     }
 
-    endGame() {
-        this.isGameActive = false;
-        const winner = this.scores.player1 > this.scores.player2 ? 'Player 1' : 'Player 2';
-        this.resultDisplay.textContent = `Game Over! ${winner} wins the match!`;
-        
-        setTimeout(() => {
-            if (confirm('Play again?')) {
-                this.resetGame();
-            }
-        }, 2000);
+    displayChoices(player1Choice, player2Choice) {
+        const displays = document.querySelectorAll('.choice-display');
+        displays[0].textContent = this.getChoiceEmoji(player1Choice);
+        displays[1].textContent = this.getChoiceEmoji(player2Choice);
+
+        displays.forEach(display => {
+            display.animate(this.animations.result, {
+                duration: 500,
+                iterations: 1
+            });
+        });
     }
 
     getChoiceEmoji(choice) {
@@ -193,22 +135,76 @@ class RPSGame {
             paper: '✋',
             scissors: '✌'
         };
-        return emojis[choice] || '';
+        return emojis[choice] || '❓';
     }
 
-    // Socket event handlers
-    handleGameStart(data) {
-        console.log('Game started:', data);
-        this.resetGame();
+    determineWinner(choice1, choice2) {
+        if (choice1 === choice2) return 'draw';
+        const wins = {
+            rock: 'scissors',
+            paper: 'rock',
+            scissors: 'paper'
+        };
+        return wins[choice1] === choice2 ? 'win' : 'loss';
     }
 
-    handleRoundResult(data) {
-        console.log('Round result:', data);
-        this.showResult(data.result);
+    updateScores(result) {
+        const resultDisplay = document.querySelector('.result');
+        
+        switch (result) {
+            case 'win':
+                this.scores.player1++;
+                resultDisplay.textContent = 'You Win! 🎉';
+                this.sessionManager.updateStatistics('win');
+                break;
+            case 'loss':
+                this.scores.player2++;
+                resultDisplay.textContent = 'You Lose! 😢';
+                this.sessionManager.updateStatistics('loss');
+                break;
+            case 'draw':
+                resultDisplay.textContent = 'Draw! 🤝';
+                this.sessionManager.updateStatistics('draw');
+                break;
+        }
+
+        // Update score displays
+        document.querySelectorAll('.score').forEach((display, index) => {
+            display.textContent = this.scores[`player${index + 1}`];
+        });
+
+        resultDisplay.animate(this.animations.result, {
+            duration: 500,
+            iterations: 1
+        });
+    }
+
+    resetGame() {
+        this.scores = { player1: 0, player2: 0 };
+        document.querySelectorAll('.score').forEach(display => {
+            display.textContent = '0';
+        });
+        document.querySelector('.result').textContent = '';
+        document.querySelectorAll('.choice-display').forEach(display => {
+            display.textContent = '';
+        });
+    }
+
+    async captureImage() {
+        const video = document.getElementById('camera-feed');
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+        const formData = new FormData();
+        formData.append('image', blob);
+        return formData;
     }
 }
 
-// Initialize game when document is ready
+// Initialize game when document is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.game = new RPSGame();
 }); 
