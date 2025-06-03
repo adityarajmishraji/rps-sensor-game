@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Game Sounds</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .sound-group {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rock Paper Scissors Sound Generator</h1>
+    <div class="sound-group">
+        <h3>UI Sounds</h3>
+        <button onclick="playClickSound()">Test Click Sound</button>
+        <button onclick="downloadSound('click')">Download Click Sound</button>
+    </div>
+    <div class="sound-group">
+        <h3>Game Result Sounds</h3>
+        <button onclick="playWinSound()">Test Win Sound</button>
+        <button onclick="downloadSound('win')">Download Win Sound</button>
+        <button onclick="playLoseSound()">Test Lose Sound</button>
+        <button onclick="downloadSound('lose')">Download Lose Sound</button>
+        <button onclick="playDrawSound()">Test Draw Sound</button>
+        <button onclick="downloadSound('draw')">Download Draw Sound</button>
+    </div>
+    <div class="sound-group">
+        <h3>Game Flow Sounds</h3>
+        <button onclick="playStartSound()">Test Start Sound</button>
+        <button onclick="downloadSound('start')">Download Start Sound</button>
+        <button onclick="playCountdownSound()">Test Countdown Sound</button>
+        <button onclick="downloadSound('countdown')">Download Countdown Sound</button>
+    </div>
+    <div class="sound-group">
+        <h3>Gesture Recognition Sounds</h3>
+        <button onclick="playGestureSound()">Test Gesture Sound</button>
+        <button onclick="downloadSound('gesture')">Download Gesture Sound</button>
+    </div>
+
+    <script>
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Click sound - short and crisp
+        function createClickSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            return { oscillator, gainNode };
+        }
+
+        // Win sound - ascending happy tune with dual oscillators
+        function createWinSound() {
+            const oscillator1 = audioContext.createOscillator();
+            const oscillator2 = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            // First oscillator - base ascending tone
+            oscillator1.type = 'sine';
+            oscillator1.frequency.setValueAtTime(440, audioContext.currentTime);
+            oscillator1.frequency.linearRampToValueAtTime(880, audioContext.currentTime + 0.2);
+            
+            // Second oscillator - higher celebratory tone
+            oscillator2.type = 'triangle';
+            oscillator2.frequency.setValueAtTime(660, audioContext.currentTime);
+            oscillator2.frequency.linearRampToValueAtTime(1320, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator1.connect(gainNode);
+            oscillator2.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            return { oscillator1, oscillator2, gainNode };
+        }
+
+        // Lose sound - descending sad tune
+        function createLoseSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+            oscillator.frequency.linearRampToValueAtTime(220, audioContext.currentTime + 0.3);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            return { oscillator, gainNode };
+        }
+
+        // Draw sound - neutral tune
+        function createDrawSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            return { oscillator, gainNode };
+        }
+
+        // Start sound - energetic startup sound
+        function createStartSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+            oscillator.frequency.linearRampToValueAtTime(440, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            return { oscillator, gainNode };
+        }
+
+        // Countdown beep
+        function createCountdownSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(660, audioContext.currentTime);
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            return { oscillator, gainNode };
+        }
+
+        // Gesture detection sound - subtle feedback
+        function createGestureSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(1200, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            return { oscillator, gainNode };
+        }
+
+        // Play functions
+        function playClickSound() {
+            const { oscillator, gainNode } = createClickSound();
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        function playWinSound() {
+            const { oscillator1, oscillator2, gainNode } = createWinSound();
+            oscillator1.start();
+            oscillator2.start();
+            oscillator1.stop(audioContext.currentTime + 0.3);
+            oscillator2.stop(audioContext.currentTime + 0.3);
+        }
+
+        function playLoseSound() {
+            const { oscillator, gainNode } = createLoseSound();
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.4);
+        }
+
+        function playDrawSound() {
+            const { oscillator, gainNode } = createDrawSound();
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
+        function playStartSound() {
+            const { oscillator, gainNode } = createStartSound();
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
+        function playCountdownSound() {
+            const { oscillator, gainNode } = createCountdownSound();
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        function playGestureSound() {
+            const { oscillator, gainNode } = createGestureSound();
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // Download function
+        async function downloadSound(type) {
+            const offlineContext = new OfflineAudioContext(1, 44100, 44100);
+            let sound;
+            let duration;
+
+            switch(type) {
+                case 'click':
+                    sound = createClickSound();
+                    duration = 0.1;
+                    break;
+                case 'win':
+                    sound = createWinSound();
+                    duration = 0.3;
+                    break;
+                case 'lose':
+                    sound = createLoseSound();
+                    duration = 0.4;
+                    break;
+                case 'draw':
+                    sound = createDrawSound();
+                    duration = 0.2;
+                    break;
+                case 'start':
+                    sound = createStartSound();
+                    duration = 0.2;
+                    break;
+                case 'countdown':
+                    sound = createCountdownSound();
+                    duration = 0.1;
+                    break;
+                case 'gesture':
+                    sound = createGestureSound();
+                    duration = 0.1;
+                    break;
+            }
+
+            sound.oscillator.connect(sound.gainNode);
+            sound.gainNode.connect(offlineContext.destination);
+            sound.oscillator.start();
+            sound.oscillator.stop(duration);
+
+            const renderedBuffer = await offlineContext.startRendering();
+            const wav = audioBufferToWav(renderedBuffer);
+            const blob = new Blob([wav], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${type}.wav`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Convert AudioBuffer to WAV format
+        function audioBufferToWav(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const format = 1; // PCM
+            const bitDepth = 16;
+            
+            const bytesPerSample = bitDepth / 8;
+            const blockAlign = numChannels * bytesPerSample;
+            
+            const wav = new ArrayBuffer(44 + buffer.length * bytesPerSample);
+            const view = new DataView(wav);
+            
+            // Write WAV header
+            const writeString = (view, offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + buffer.length * bytesPerSample, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * blockAlign, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitDepth, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, buffer.length * bytesPerSample, true);
+            
+            // Write audio data
+            const offset = 44;
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                const sample = Math.max(-1, Math.min(1, data[i]));
+                view.setInt16(offset + i * bytesPerSample, sample * 0x7FFF, true);
+            }
+            
+            return new Uint8Array(wav);
+        }
+    </script>
+</body>
+</html> 

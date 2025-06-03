@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissors - Hand Gesture Game (Dev)</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <!-- MediaPipe Hands -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <!-- Socket.IO Client -->
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>Rock Paper Scissors (Development)</h1>
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="computer">vs Computer</button>
+                <button class="mode-btn" data-mode="local">Local 2P</button>
+                <button class="mode-btn" data-mode="gesture">Hand Gesture</button>
+            </div>
+        </header>
+
+        <main>
+            <div class="game-area">
+                <div class="player player-1">
+                    <h2>Player 1</h2>
+                    <div class="choice-display"></div>
+                    <div class="score">0</div>
+                </div>
+
+                <div class="game-status">
+                    <div class="timer">3</div>
+                    <div class="result"></div>
+                </div>
+
+                <div class="player player-2">
+                    <h2>Player 2</h2>
+                    <div class="choice-display"></div>
+                    <div class="score">0</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="choice-btn" data-choice="rock">✊</button>
+                <button class="choice-btn" data-choice="paper">✋</button>
+                <button class="choice-btn" data-choice="scissors">✌</button>
+            </div>
+
+            <div class="camera-container hidden">
+                <video id="camera-feed" playsinline></video>
+                <canvas id="gesture-canvas"></canvas>
+            </div>
+        </main>
+    </div>
+
+    <!-- Game Scripts -->
+    <script src="scripts/config.js"></script>
+    <script src="scripts/gesture.js"></script>
+    <script src="scripts/game.js"></script>
+    <script src="scripts/ui.js"></script>
+</body>
+</html> 

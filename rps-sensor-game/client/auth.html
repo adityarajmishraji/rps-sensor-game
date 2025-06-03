@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPS Game - Play Now</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .quick-start {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .guest-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin-bottom: 20px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .guest-btn:hover {
+            background: #45a049;
+            transform: scale(1.02);
+        }
+        .social-login {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .google-btn {
+            background: #fff;
+            color: #757575;
+        }
+        .facebook-btn {
+            background: #1877f2;
+            color: white;
+        }
+        .github-btn {
+            background: #24292e;
+            color: white;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: #888;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #888;
+        }
+        .divider span {
+            padding: 0 10px;
+        }
+        .nickname-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="quick-start">
+            <h2>Start Playing Now!</h2>
+            <p>No account needed - just pick a nickname and play</p>
+            <input type="text" id="guestNickname" class="nickname-input" placeholder="Enter a nickname (or get a funny anime name)">
+            <button onclick="startAsGuest()" class="guest-btn">Play as Guest</button>
+        </div>
+
+        <div class="social-login">
+            <button onclick="loginWithGoogle()" class="social-btn google-btn">
+                Continue with Google
+            </button>
+            <button onclick="loginWithFacebook()" class="social-btn facebook-btn">
+                Continue with Facebook
+            </button>
+            <button onclick="loginWithGithub()" class="social-btn github-btn">
+                Continue with GitHub
+            </button>
+        </div>
+
+        <div class="divider">
+            <span>or</span>
+        </div>
+
+        <button onclick="toggleForms('login')" class="choice-btn">Sign In</button>
+        <button onclick="toggleForms('signup')" class="choice-btn">Create Account</button>
+
+        <!-- Existing login/signup forms with display:none by default -->
+        <div id="loginForm" class="auth-form" style="display: none;">
+            <!-- ... existing login form code ... -->
+        </div>
+
+        <div id="signupForm" class="auth-form" style="display: none;">
+            <!-- ... existing signup form code ... -->
+        </div>
+    </div>
+
+    <script>
+        // Generate a random guest ID
+        function generateGuestId() {
+            return 'guest_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Funny anime name generator
+        function getRandomAnimeName() {
+            const prefixes = [
+                'naruto', 'sasuke', 'goku', 'luffy', 'hinata',
+                'pikachu', 'saitama', 'eren', 'mikasa', 'light'
+            ];
+            const suffixes = [
+                'noob', 'looser', 'wannabe', 'derp', 'potato',
+                'sleepy', 'clumsy', 'grumpy', 'dizzy', 'silly'
+            ];
+            const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+            const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+            return `${prefix}_${suffix}`;
+        }
+
+        // Handle guest play
+        async function startAsGuest() {
+            const nickname = document.getElementById('guestNickname').value.trim() || getRandomAnimeName();
+            const guestData = {
+                username: nickname,
+                id: generateGuestId(),
+                isGuest: true,
+                stats: {
+                    wins: 0,
+                    losses: 0,
+                    draws: 0,
+                    totalGames: 0
+                }
+            };
+            
+            // Store guest data in localStorage
+            localStorage.setItem('user', JSON.stringify(guestData));
+            window.location.href = '/';
+        }
+
+        // Social login handlers
+        async function loginWithGoogle() {
+            // Implement Google OAuth login
+            alert('Google login will be implemented');
+        }
+
+        async function loginWithFacebook() {
+            // Implement Facebook OAuth login
+            alert('Facebook login will be implemented');
+        }
+
+        async function loginWithGithub() {
+            // Implement GitHub OAuth login
+            alert('GitHub login will be implemented');
+        }
+
+        // Existing functions
+        function toggleForms(show) {
+            document.getElementById('loginForm').style.display = show === 'login' ? 'flex' : 'none';
+            document.getElementById('signupForm').style.display = show === 'signup' ? 'flex' : 'none';
+        }
+
+        // ... rest of your existing JavaScript code ...
+    </script>
+</body>
+</html>
